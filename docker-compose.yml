@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-bigquery:1.5.0
+    container_name: dbt
+    platform: linux/amd64/v8  # Force the image to run on amd64 platform
+    volumes:
+      - ./dbt_project:/usr/app/dbt  # dbt project
+      - ./dbt_profiles/profiles.yml:/root/.dbt/profiles.yml  # Local profiles directory mounted inside the container
+      - ./seeds:/usr/app/dbt/seeds 
+      - /Users/jhelumprakash/Downloads/intricate-abbey-396419-d0f76cf73d15.json:/root/.dbt/intricate-abbey-396419-d0f76cf73d15.json 
+    environment:
+      DBT_PROFILES_DIR: /root/.dbt/  # Set the environment variable for dbt profiles
+    working_dir: /usr/app/dbt
+
+  webserver:
+    image: apache/airflow:2.7.2-python3.9
+    container_name: airflow_webserver
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow_db
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./dbt_project:/opt/airflow/dbt_project
+      - ./dbt_profiles:/opt/airflow/dbt_profiles
+    ports:
+      - "8081:8080"
+    command: "airflow webserver"
+
+  scheduler:
+    image: apache/airflow:2.7.2-python3.9
+    container_name: airflow_scheduler
+    depends_on:
+      - webserver
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow_db
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./dbt_project:/opt/airflow/dbt_project
+      - ./dbt_profiles:/opt/airflow/dbt_profiles
+    command: "airflow scheduler"
+
+  # Spark Master service
+  spark-master:
+    image: bitnami/spark:3.5.0
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/spark-app/intricate-abbey-396419-d0f76cf73d15.json
+    ports:
+      - "7077:7077"  # Spark master web UI
+    volumes:
+      - ./spark_app:/opt/spark-app  # Spark application directory
+      #- ./gcp_credentials:/opt/spark-app/intricate-abbey-396419-d0f76cf73d15.json
+      - /Users/jhelumprakash/Downloads/intricate-abbey-396419-d0f76cf73d15.json:/opt/spark-app/intricate-abbey-396419-d0f76cf73d15.json
+    # command: ["spark-submit", 
+    #           "--packages", 
+    #           "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.29.0", 
+    #           "--master", "local[*]", 
+    #           "opt/spark_app/process_aeroplane_model.py"]  # Run your Spark application
+  # Spark Worker service
+  spark-worker:
+    image: bitnami/spark:3.5.0
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077  # Connect to the Spark master
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/spark-app/intricate-abbey-396419-d0f76cf73d15.json
+    depends_on:
+      - spark-master
+    ports:
+      - "4040:4040"  # Spark worker web UI
+    volumes:
+      - ./spark_app:/opt/spark-app
+      #- ./gcp_credentials:/opt/spark-app/intricate-abbey-396419-d0f76cf73d15.json
+      - /Users/jhelumprakash/Downloads/intricate-abbey-396419-d0f76cf73d15.json:/opt/spark-app/intricate-abbey-396419-d0f76cf73d15.json
+volumes:
+  postgres_data:

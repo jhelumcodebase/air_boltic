@@ -1,0 +1,43 @@
+CREATE TABLE Customer_Group (
+    ID INT PRIMARY KEY,                  -- Unique identifier for the customer group
+    Type VARCHAR(100) NOT NULL,          -- Type of customer group (e.g., corporate, family, etc.)
+    Name VARCHAR(255) NOT NULL,          -- Name of the customer group
+    Registry_Number VARCHAR(100) UNIQUE  -- Unique registry number for the customer group
+);
+
+
+CREATE TABLE Aeroplanes (
+    Airplane_ID INT PRIMARY KEY,            -- Unique identifier for the airplane
+    Airplane_Model VARCHAR(255) NOT NULL,   -- Model name of the airplane
+    Manufacturer VARCHAR(255) NOT NULL      -- Manufacturer of the airplane
+);
+
+CREATE TABLE Trips (
+    Trip_ID INT PRIMARY KEY,                  -- Unique identifier for each trip
+    Origin_City VARCHAR(255) NOT NULL,        -- The city where the trip starts
+    Destination_City VARCHAR(255) NOT NULL,   -- The city where the trip ends
+    Airplane_ID INT,                          -- Foreign key to the airplane used for the trip
+    Start_Timestamp TIMESTAMP NOT NULL,       -- Start time and date of the trip
+    End_Timestamp TIMESTAMP NOT NULL,         -- End time and date of the trip
+    FOREIGN KEY (Airplane_ID) REFERENCES Aeroplanes(Airplane_ID) -- Links to the Aeroplanes table
+);
+
+CREATE TABLE Orders (
+    Order_ID INT PRIMARY KEY,               -- Unique identifier for each order
+    Customer_ID INT,                        -- Foreign key referencing the customer who placed the order
+    Trip_ID INT,                            -- Foreign key referencing the trip associated with the order
+    Price_EUR DECIMAL(10, 2) NOT NULL,      -- Price of the order in EUR (up to 10 digits, 2 decimal places)
+    Seat_No VARCHAR(10) NOT NULL,           -- Seat number assigned to the customer for the trip
+    Status VARCHAR(50) NOT NULL,            -- Status of the order (e.g., 'Confirmed', 'Cancelled', 'Pending')
+    FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),  -- Links to the Customers table
+    FOREIGN KEY (Trip_ID) REFERENCES Trips(Trip_ID)               -- Links to the Trips table
+);
+
+CREATE TABLE Aeroplane_Model (
+    Model VARCHAR(255) PRIMARY KEY,      -- Unique identifier for the airplane model
+    Engine_Type VARCHAR(100) NOT NULL,   -- Type of engine used in the airplane model (e.g., jet, turboprop)
+    Manufacturer VARCHAR(255) NOT NULL,  -- Manufacturer of the airplane model
+    Max_Distance DECIMAL(10, 2) NOT NULL,-- Maximum distance the airplane can travel (in kilometers, for example)
+    Max_Seats INT NOT NULL,              -- Maximum number of seats available on the airplane
+    Max_Weight DECIMAL(10, 2) NOT NULL   -- Maximum weight capacity of the airplane (in tons or kilograms)
+);

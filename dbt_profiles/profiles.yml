@@ -1,0 +1,14 @@
+my_dbt_project:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: intricate-abbey-396419
+      dataset: air_boltic
+      threads: 4
+      keyfile: /root/.dbt/intricate-abbey-396419-d0f76cf73d15.json
+      location: US
+      timeout_seconds: 300
+      priority: interactive
+      retries: 1

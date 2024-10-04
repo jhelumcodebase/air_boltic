@@ -1,0 +1,9 @@
+Customers 
+    |
+    |---< Orders 
+                |
+                |---< Trips 
+                            |
+                            |---< Aeroplanes 
+                                        |
+                                        |---< Aeroplane_Models

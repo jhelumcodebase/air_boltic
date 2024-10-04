@@ -1,0 +1,5 @@
+version: 2
+
+seeds:
+  - name: aeroplane_model
+    description: "Create aeroplane model from JSON file"
