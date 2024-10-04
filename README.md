@@ -1,4 +1,4 @@
-Air_Boltic
+**Air_Boltic**
 A design for a hypothetical air taxi service.
 
 ETL Process Overview
